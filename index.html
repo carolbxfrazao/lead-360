@@ -54,13 +54,20 @@ p{margin:0 0 12px}
 textarea,select,input[type=text]{width:100%;font:400 16px/1.4 var(--text);color:var(--ink);background:var(--surface);border:1px solid var(--muted);border-radius:4px;padding:10px}
 textarea{min-height:92px;resize:vertical}
 textarea:focus-visible,select:focus-visible,input[type=text]:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
-.grupo{margin:0 0 14px}
-.grupo h3{margin:0 0 6px;font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.fichas{display:flex;flex-wrap:wrap;gap:6px}
-.ficha{font:700 15px/1 var(--text);padding:11px 12px;min-height:40px;border:1px solid var(--muted);border-radius:4px;background:var(--surface);color:var(--ink);cursor:pointer}
-.ficha[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
-.ficha:focus-visible,.btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
-.contagem{font-weight:700;margin:4px 0 16px}
+.legenda{gap:4px;font-size:14px;padding:12px}
+.legenda b{display:inline}
+.tabela{overflow-x:auto;scroll-padding-left:100px;margin:0 -4px 20px;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:14px}
+tbody th[scope=row]{position:sticky;left:0;z-index:1;background:var(--surface);text-align:left;font-weight:700;padding:4px 6px 4px 4px;min-width:78px;max-width:92px;overflow-wrap:anywhere}
+.cab th{background:var(--raised);color:var(--muted);font-size:11px;font-weight:900;padding:7px 2px;text-align:center;line-height:1.15}
+.cab th:first-child{position:sticky;left:0;z-index:2;text-align:left;padding-left:6px;color:var(--ink);letter-spacing:.04em;text-transform:uppercase}
+td{padding:2px;text-align:center}
+tr.falta th[scope=row]{color:var(--brand-text)}
+.tabela input.nota{width:36px;height:40px;padding:0;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.tabela input.nota[disabled]{opacity:.3}
+.nc{width:22px;height:22px;accent-color:var(--brand)}
+.nc:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .acoes{display:flex;gap:8px;margin-top:24px}
 .btn{font:900 16px/1 var(--text);min-height:50px;padding:0 18px;border-radius:4px;cursor:pointer;border:1px solid var(--muted);background:transparent;color:var(--ink)}
 .btn.principal{flex:1;background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
@@ -85,16 +92,19 @@ const NOME = 'Lead 360';
 const CHAVE = 'lead-360';
 const SETORES = ['Gestão','Salão de musculação','Aulas coletivas','Lead Vitta','Comercial','Recepção e Lead Coffee','Apoio'];
 const CRITERIOS = [
-  ['educacao','Educação e cortesia','Trata bem alunos e colegas'],
-  ['apresentacao','Apresentação pessoal','Roupa, uniforme, postura'],
-  ['tecnica','Técnica','Faz bem o que é da sua função'],
-  ['equipe','Trabalho em equipe','Ajuda, se comunica, soma com o time'],
-  ['wellness','Vive wellness e alta performance','Cuida do corpo e da rotina. Vive o que a gente ensina'],
+  ['educacao','Educação e cortesia','Educ.'],
+  ['apresentacao','Apresentação pessoal','Apres.'],
+  ['tecnica','Técnica no que é da sua função','Técn.'],
+  ['equipe','Trabalho em equipe: colabora e ajuda os colegas','Equipe'],
+  ['wellness','Vive wellness e alta performance','Well.'],
+  ['ie','Inteligência emocional','IE'],
+  ['proatividade','Proatividade na resolução de desafios','Proat.'],
+  ['comunicacao','Comunicação','Comun.'],
+  ['energia','Energia: ânimo, vontade, para frente','Energ.'],
 ];
-const PASSOS = ['abertura','trabalho','lugar','gestao','voce','colegas','ideias'];
-const MIN_COLEGAS = 3, MAX_COLEGAS = 5;
+const PASSOS = ['abertura','trabalho','lugar','lideranca','gestao','colegas','ideias'];
 
-let todos = [], eu = null, equipe = [], passo = 0, a = { colegas: [] };
+let todos = [], eu = null, equipe = [], passo = 0, a = {};
 const tela = document.getElementById('tela');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -105,7 +115,6 @@ function carregar() {
 function definirPessoa() {
   eu = todos.find(p => p.id === a.quem) || null;
   equipe = todos.filter(p => p.id !== a.quem);
-  a.colegas = (a.colegas || []).filter(id => equipe.some(p => p.id === id));
 }
 function limpar() { try { localStorage.removeItem(CHAVE); } catch (e) {} }
 
@@ -124,9 +133,6 @@ function aberta(id, titulo, apoio) {
   return `<div class="q" data-q="${id}"><label for="${id}">${esc(titulo)}${apoio ? `<small>${esc(apoio)}</small>` : ''}</label>
     <textarea id="${id}" data-t="${id}" maxlength="3000">${esc(a[id] || '')}</textarea></div>`;
 }
-function criterios(prefixo) {
-  return CRITERIOS.map(([k, nome, apoio]) => escala(prefixo + k, nome, 5, { naoSei: true, apoio })).join('');
-}
 const NOTA_05 = ['0 = muito ruim', '5 = excelente'];
 
 const TELAS = {
@@ -137,7 +143,7 @@ const TELAS = {
     <div class="promessa">
       <div><b>Só eu leio.</b>Nenhuma pessoa do time, da coordenação ou do RH tem acesso às respostas.</div>
       <div><b>Seu nome fica comigo.</b>Ninguém vai saber a nota que você deu, nem quem deu nota para quem.</div>
-      <div><b>Leva uns 10 minutos.</b>Pode parar no meio e voltar depois pelo mesmo link. O que você já marcou fica salvo neste celular.</div>
+      <div><b>Leva uns 25 minutos.</b>Pode parar no meio e voltar depois pelo mesmo link. O que você já marcou fica salvo neste celular.</div>
     </div>
     <p>Pode falar com sinceridade, tá? É isso que vai me ajudar.</p>
     <p><b>Carol Frazão</b></p>
@@ -152,7 +158,7 @@ const TELAS = {
     ${escala('entrosamento', 'O quanto você se dá bem com o time?', 5, { pontas: ['0 = nada', '5 = demais'] })}
     ${escala('indicaria', 'O quanto você indicaria a Lead para um amigo trabalhar aqui?', 5, { pontas: ['0 = jamais', '5 = com certeza'] })}
     ${aberta('maisGosta', 'O que você mais gosta daqui?')}
-    ${aberta('maisAtrapalha', 'O que mais atrapalha o seu trabalho hoje?')}`,
+    ${aberta('maisAtrapalha', 'Qual o maior desafio que você enfrenta hoje para executar o seu trabalho?')}`,
   lugar: () => `
     <h1>O lugar</h1>
     <p class="apoio">Pense no lugar onde você trabalha. ${NOTA_05.join(', ')}.</p>
@@ -161,47 +167,43 @@ const TELAS = {
     ${escala('lugarLimpeza', 'Limpeza e organização', 5)}
     ${escala('lugarHorarios', 'Meus horários e minha escala', 5)}
     ${escala('lugarComunicacao', 'A comunicação entre os setores', 5)}`,
+  lideranca: () => `
+    <h1>Sua liderança direta</h1>
+    <p class="apoio">Sua liderança direta é ${esc(eu.lider)}. ${NOTA_05.join(', ')}.</p>
+    ${escala('liderClareza', 'Deixa claro o que espera de mim', 5)}
+    ${escala('liderEscuta', 'Me escuta quando eu preciso', 5)}
+    ${escala('liderRespeito', 'Me trata com respeito', 5)}
+    ${escala('liderRetorno', 'Me dá retorno sobre o meu trabalho', 5)}
+    ${aberta('liderMelhorar', `O que ${eu.lider} pode fazer melhor?`)}`,
   gestao: () => `
     <h1>A gestão</h1>
-    <p class="apoio">${NOTA_05.join(', ')}. Pode falar com sinceridade.</p>
-    <div class="bloco"><h2>${esc(eu.lider)}, sua liderança direta</h2>
-      ${escala('liderClareza', 'Deixa claro o que espera de mim', 5)}
-      ${escala('liderEscuta', 'Me escuta quando eu preciso', 5)}
-      ${escala('liderRespeito', 'Me trata com respeito', 5)}
-      ${escala('liderRetorno', 'Me dá retorno sobre o meu trabalho', 5)}
-    </div>
-    <div class="bloco"><h2>A gestão do Grupo Lead</h2>
-      ${escala('gestaoDecisoes', 'As decisões são explicadas com clareza', 5)}
-      ${escala('gestaoPresenca', 'Sinto a gestão presente no dia a dia', 5)}
-    </div>
-    ${aberta('gestaoMelhorar', 'O que a gestão pode fazer melhor?', 'Inclusive eu.')}`,
-  voce: () => `
-    <h1>Você e seu time</h1>
-    <p class="apoio">${NOTA_05.join(', ')}. Use ? quando não souber avaliar.</p>
-    <div class="bloco"><h2>Você</h2>${criterios('auto_')}</div>
-    <div class="bloco"><h2>Seu time (${esc(eu.setor)})</h2>${criterios('time_')}</div>`,
+    <p class="apoio">A gestão sou eu, Carol. Pode me avaliar com sinceridade. ${NOTA_05.join(', ')}.</p>
+    ${escala('gestaoDecisoes', 'Explica as decisões com clareza', 5)}
+    ${escala('gestaoPresenca', 'Está presente no dia a dia', 5)}
+    ${escala('gestaoEscuta', 'Escuta o time', 5)}
+    ${escala('gestaoRespeito', 'Trata o time com respeito', 5)}
+    ${aberta('gestaoMelhorar', 'O que eu posso fazer melhor?')}`,
   colegas: () => {
     const ordem = [eu.setor, ...SETORES.filter(s => s !== eu.setor)];
     const grupos = ordem.map(s => {
       const pessoas = equipe.filter(p => p.setor === s);
       if (!pessoas.length) return '';
-      return `<div class="grupo"><h3>${esc(s)}</h3><div class="fichas">${pessoas.map(p =>
-        `<button type="button" class="ficha" data-p="${p.id}" aria-pressed="${a.colegas.includes(p.id)}">${esc(p.nome)}</button>`).join('')}</div></div>`;
-    }).join('');
-    const cards = a.colegas.map(id => {
-      const p = equipe.find(x => x.id === id);
-      if (!p) return '';
-      const cid = 'c' + id + '_comentario';
-      return `<div class="bloco"><h2>${esc(p.nome)}</h2>${criterios('c' + id + '_')}
-        <div class="q"><label for="${cid}">Quer dizer algo sobre ${esc(p.nome)}?<small>Opcional</small></label>
-        <input type="text" id="${cid}" data-t="${cid}" maxlength="500" value="${esc(a[cid] || '')}"></div></div>`;
+      const linhas = pessoas.map(p => {
+        const nc = !!a['nc_' + p.id];
+        return `<tr data-p="${p.id}"><th scope="row">${esc(p.nome)}</th><td><input class="nc" type="checkbox" data-nc="${p.id}" aria-label="Não convivo com ${esc(p.nome)}" ${nc ? 'checked' : ''}></td>${CRITERIOS.map(([k, nome]) => {
+          const id = 'c' + p.id + '_' + k;
+          const v = a[id] === undefined || a[id] === null ? '' : a[id];
+          return `<td><input class="nota" type="text" inputmode="numeric" maxlength="1" autocomplete="off" data-n="${id}" aria-label="${esc(p.nome)}: ${esc(nome)}" value="${v}" ${nc ? 'disabled' : ''}></td>`;
+        }).join('')}</tr>`;
+      }).join('');
+      return `<tbody><tr class="cab"><th scope="col">${esc(s)}</th><th scope="col">Não<br>convivo</th>${CRITERIOS.map(c => `<th scope="col">${c[2]}</th>`).join('')}</tr>${linhas}</tbody>`;
     }).join('');
     return `<h1>Seus colegas</h1>
-      <p>Escolha de ${MIN_COLEGAS} a ${MAX_COLEGAS} pessoas com quem você mais convive no trabalho. Ninguém vai ver sua nota.</p>
-      ${grupos}
-      <p class="contagem">${a.colegas.length} de ${MAX_COLEGAS} escolhidas</p>
-      ${a.colegas.length ? `<p class="apoio">${NOTA_05.join(', ')}. Use ? quando não souber avaliar.</p>` : ''}
-      ${cards}`;
+      <p>Dê uma nota de 0 a 5 para cada pessoa em cada critério. Ninguém vai ver suas notas.</p>
+      <div class="promessa legenda">${CRITERIOS.map(([k, nome, curto]) => `<div><b>${curto}</b> ${esc(nome)}</div>`).join('')}</div>
+      <p class="apoio">Toque na primeira casa e vá digitando: o cursor pula sozinho. Arraste a tabela para o lado para ver todos os critérios. Deixe em branco o critério que você não sabe avaliar. Se não convive com a pessoa, marque Não convivo.</p>
+      <div class="tabela"><table>${grupos}</table></div>
+      ${aberta('sobreColaborador', 'Você gostaria de dizer algo específico sobre algum colaborador?', 'Sugestão de melhoria, feedback ou elogio. Diga o nome da pessoa. Se não tiver nada, escreva "nada".')}`;
   },
   ideias: () => `
     <h1>Suas ideias</h1>
@@ -219,11 +221,11 @@ function obrigatorias(nome) {
   const ids = [];
   const raiz = { trabalho: ['gosta','entrosamento','indicaria','maisGosta','maisAtrapalha'],
     lugar: ['lugarEstrutura','lugarMateriais','lugarLimpeza','lugarHorarios','lugarComunicacao'],
-    gestao: ['liderClareza','liderEscuta','liderRespeito','liderRetorno','gestaoDecisoes','gestaoPresenca','gestaoMelhorar'],
+    lideranca: ['liderClareza','liderEscuta','liderRespeito','liderRetorno','liderMelhorar'],
+    gestao: ['gestaoDecisoes','gestaoPresenca','gestaoEscuta','gestaoRespeito','gestaoMelhorar'],
+    colegas: ['sobreColaborador'],
     ideias: ['melhoriaSetor','outroSetor','melhoriaOutro','critica','aprender'] }[nome];
   if (raiz) ids.push(...raiz);
-  if (nome === 'voce') for (const p of ['auto_','time_']) CRITERIOS.forEach(([k]) => ids.push(p + k));
-  if (nome === 'colegas') a.colegas.forEach(id => CRITERIOS.forEach(([k]) => ids.push('c' + id + '_' + k)));
   return ids;
 }
 
@@ -233,8 +235,14 @@ function validar() {
   const faltam = obrigatorias(nome).filter(id => a[id] === undefined || (typeof a[id] === 'string' && a[id].trim().length < 2));
   tela.querySelectorAll('.q.falta').forEach(q => q.classList.remove('falta'));
   faltam.forEach(id => { const q = tela.querySelector(`[data-q="${id}"]`); if (q) q.classList.add('falta'); });
-  if (nome === 'colegas' && a.colegas.length < MIN_COLEGAS) {
-    return `Escolha pelo menos ${MIN_COLEGAS} pessoas para continuar.`;
+  if (nome === 'colegas') {
+    const vazias = equipe.filter(p => !a['nc_' + p.id] && !CRITERIOS.some(([k]) => Number.isInteger(a['c' + p.id + '_' + k])));
+    tela.querySelectorAll('tr.falta').forEach(l => l.classList.remove('falta'));
+    vazias.forEach(p => tela.querySelector(`tr[data-p="${p.id}"]`).classList.add('falta'));
+    if (vazias.length) {
+      tela.querySelector('tr.falta').scrollIntoView({ block: 'center' });
+      return vazias.length === 1 ? `Falta avaliar ${vazias[0].nome} na tabela, ou marcar Não convivo.` : `Faltam ${vazias.length} pessoas na tabela. Dê as notas ou marque Não convivo.`;
+    }
   }
   if (faltam.length) {
     const q = tela.querySelector('.q.falta');
@@ -274,7 +282,12 @@ async function enviar() {
     const d = await r.json();
     if (!d.ok) throw new Error(d.erro);
     limpar();
-    final('Recebi suas respostas.', 'Obrigada por confiar em mim e falar com sinceridade. Vou ler tudo com muito carinho.');
+    final('Recebi suas respostas.', [
+      'Vou ler tudo com carinho e com sigilo. E vou chamar você para uma reunião de feedback, para a gente conversar sobre tudo que foi falado.',
+      'Já quero deixar aqui o meu comprometimento com o cuidado e o avanço do grupo. Eu tenho muito amor pelo que faço e quero que a gente esteja cada vez mais próximo.',
+      'Quero que esse canal de comunicação comigo seja cada vez mais transparente, para você sentir que tem liberdade de chegar até mim, dar um feedback, propor uma melhoria e se desenvolver.',
+      'To God be the glory.',
+    ], 'Carol Frazão');
   } catch (e) {
     botao.disabled = false;
     botao.textContent = 'Enviar para a Carol';
@@ -282,15 +295,22 @@ async function enviar() {
   }
 }
 
-function final(titulo, texto) {
+function final(titulo, paragrafos, assinatura) {
   document.getElementById('passo').textContent = '';
   document.getElementById('progresso').style.width = '100%';
-  tela.innerHTML = `<h1>${esc(titulo)}</h1><p>${esc(texto)}</p>`;
+  tela.innerHTML = `<h1>${esc(titulo)}</h1>${paragrafos.map(t => `<p>${esc(t)}</p>`).join('')}<p><b>${esc(assinatura)}</b></p>`;
   window.scrollTo(0, 0);
 }
 
 tela.addEventListener('change', e => {
   const t = e.target;
+  if (t.dataset.nc) {
+    const linha = t.closest('tr');
+    a['nc_' + t.dataset.nc] = t.checked;
+    linha.classList.remove('falta');
+    linha.querySelectorAll('.nota').forEach(i => { i.disabled = t.checked; if (t.checked) { i.value = ''; delete a[i.dataset.n]; } });
+    salvar();
+  }
   if (t.id === 'quem') { a.quem = Number(t.value) || null; definirPessoa(); salvar(); mostrarAviso(''); }
   if (t.type === 'radio') {
     a[t.name] = t.value === '?' ? null : Number(t.value);
@@ -300,6 +320,20 @@ tela.addEventListener('change', e => {
   }
 });
 tela.addEventListener('input', e => {
+  const n = e.target.dataset.n;
+  if (n) {
+    const ok = /^[0-5]$/.test(e.target.value);
+    if (!ok) e.target.value = '';
+    if (ok) a[n] = Number(e.target.value); else delete a[n];
+    salvar();
+    if (ok) {
+      e.target.closest('tr').classList.remove('falta');
+      const notas = [...tela.querySelectorAll('.nota:not([disabled])')];
+      const prox = notas[notas.indexOf(e.target) + 1];
+      if (prox) { prox.focus(); prox.select(); }
+    }
+    return;
+  }
   const id = e.target.dataset.t;
   if (id) {
     a[id] = e.target.value;
@@ -309,19 +343,6 @@ tela.addEventListener('input', e => {
   }
 });
 tela.addEventListener('click', e => {
-  const ficha = e.target.closest('.ficha');
-  if (ficha) {
-    const id = Number(ficha.dataset.p);
-    const i = a.colegas.indexOf(id);
-    if (i >= 0) a.colegas.splice(i, 1);
-    else if (a.colegas.length < MAX_COLEGAS) a.colegas.push(id);
-    else return mostrarAviso(`Você já escolheu ${MAX_COLEGAS}. Toque em um nome para tirar.`);
-    const topo = window.scrollY;
-    salvar();
-    desenhar(false);
-    window.scrollTo(0, topo);
-    return;
-  }
   if (e.target.id === 'voltar') { passo--; salvar(); desenhar(); }
   if (e.target.id === 'seguir') {
     const erro = validar();
