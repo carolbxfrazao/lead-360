@@ -90,7 +90,7 @@ tr.falta th[scope=row]{color:var(--brand-text)}
 const API = 'https://script.google.com/macros/s/AKfycbzBVrmY2Ib7jvcykhZ3dbjDnGffpNeSEfSk3nR8TVYfJFRC-oYaXjXj_FCr-qMfCcD-/exec';
 const NOME = 'Lead 360';
 const CHAVE = 'lead-360';
-const SETORES = ['Gestão','Salão de musculação','Aulas coletivas','Lead Vitta','Comercial','Recepção e Lead Coffee','Apoio'];
+const SETORES = ['Gestão','Musculação','Aulas coletivas','Lead Vitta','Comercial','Recepção','Lead Coffee','Serviços gerais'];
 const CRITERIOS = [
   ['educacao','Educação e cortesia','Educ.'],
   ['apresentacao','Apresentação pessoal','Apres.'],
@@ -143,7 +143,7 @@ const TELAS = {
     <div class="promessa">
       <div><b>Só eu leio.</b>Nenhuma pessoa do time, da coordenação ou do RH tem acesso às respostas.</div>
       <div><b>Seu nome fica comigo.</b>Ninguém vai saber a nota que você deu, nem quem deu nota para quem.</div>
-      <div><b>Leva uns 25 minutos.</b>Pode parar no meio e voltar depois pelo mesmo link. O que você já marcou fica salvo neste celular.</div>
+      <div><b>Leva uns 20 minutos.</b>Pode parar no meio e voltar depois pelo mesmo link. O que você já marcou fica salvo neste celular.</div>
     </div>
     <p>Pode falar com sinceridade, tá? É isso que vai me ajudar.</p>
     <p><b>Carol Frazão</b></p>
@@ -201,7 +201,7 @@ const TELAS = {
     return `<h1>Seus colegas</h1>
       <p>Dê uma nota de 0 a 5 para cada pessoa em cada critério. Ninguém vai ver suas notas.</p>
       <div class="promessa legenda">${CRITERIOS.map(([k, nome, curto]) => `<div><b>${curto}</b> ${esc(nome)}</div>`).join('')}</div>
-      <p class="apoio">Toque na primeira casa e vá digitando: o cursor pula sozinho. Arraste a tabela para o lado para ver todos os critérios. Deixe em branco o critério que você não sabe avaliar. Se não convive com a pessoa, marque Não convivo.</p>
+      <p class="apoio">Toque na primeira casa e vá digitando: o cursor pula sozinho. Arraste a tabela para o lado para ver todos os critérios. Todas as casas precisam de nota. Só se você não convive com a pessoa, marque Não convivo.</p>
       <div class="tabela"><table>${grupos}</table></div>
       ${aberta('sobreColaborador', 'Você gostaria de dizer algo específico sobre algum colaborador?', 'Sugestão de melhoria, feedback ou elogio. Diga o nome da pessoa. Se não tiver nada, escreva "nada".')}`;
   },
@@ -236,12 +236,12 @@ function validar() {
   tela.querySelectorAll('.q.falta').forEach(q => q.classList.remove('falta'));
   faltam.forEach(id => { const q = tela.querySelector(`[data-q="${id}"]`); if (q) q.classList.add('falta'); });
   if (nome === 'colegas') {
-    const vazias = equipe.filter(p => !a['nc_' + p.id] && !CRITERIOS.some(([k]) => Number.isInteger(a['c' + p.id + '_' + k])));
+    const vazias = equipe.filter(p => !a['nc_' + p.id] && !CRITERIOS.every(([k]) => Number.isInteger(a['c' + p.id + '_' + k])));
     tela.querySelectorAll('tr.falta').forEach(l => l.classList.remove('falta'));
     vazias.forEach(p => tela.querySelector(`tr[data-p="${p.id}"]`).classList.add('falta'));
     if (vazias.length) {
       tela.querySelector('tr.falta').scrollIntoView({ block: 'center' });
-      return vazias.length === 1 ? `Falta avaliar ${vazias[0].nome} na tabela, ou marcar Não convivo.` : `Faltam ${vazias.length} pessoas na tabela. Dê as notas ou marque Não convivo.`;
+      return vazias.length === 1 ? `Falta completar ${vazias[0].nome} na tabela, ou marcar Não convivo.` : `Faltam ${vazias.length} pessoas na tabela. Complete todas as notas ou marque Não convivo.`;
     }
   }
   if (faltam.length) {
@@ -327,7 +327,6 @@ tela.addEventListener('input', e => {
     if (ok) a[n] = Number(e.target.value); else delete a[n];
     salvar();
     if (ok) {
-      e.target.closest('tr').classList.remove('falta');
       const notas = [...tela.querySelectorAll('.nota:not([disabled])')];
       const prox = notas[notas.indexOf(e.target) + 1];
       if (prox) { prox.focus(); prox.select(); }
